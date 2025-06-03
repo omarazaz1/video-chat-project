@@ -1,0 +1,21 @@
+# Python
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+
+# Node (frontend)
+**/node_modules/
+**/.next/
+**/.env.local
+
+# System files
+.DS_Store
+
+# IDE files
+.vscode/
+*.log
+
+# Env and build
+.env
+dist/
+build/
