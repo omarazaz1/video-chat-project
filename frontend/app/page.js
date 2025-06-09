@@ -13,6 +13,8 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
 
+
+
   const getTranscript = async () => {
     try {
       setLoading(true);
@@ -25,23 +27,47 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
 
-      if (!response.ok) throw new Error("Failed to fetch transcript");
-
+    
       const data = await response.json();
-      setTranscript(data.transcript || []);
+
+      if (data.transcript?.error) {
+        setError(data.transcript.error);
+        alert("❌ Error: " + data.transcript.error);
+        return;
+      }
+
+
+      if (!Array.isArray(data.transcript)) {
+        throw new Error("Transcript format is invalid.");
+      }
+
+      setTranscript(data.transcript);
+
+      // ✅ Safe to ingest now
+      const ingestRes = await fetch("http://127.0.0.1:8000/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: data.transcript }),
+      });
+
+      if (!ingestRes.ok) throw new Error("Ingest failed");
+      alert("✅ Transcript fetched & ingested!");
     } catch (err) {
       setError(err.message);
+      alert("❌ " + err.message);
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const ingestTranscript = async () => {
     try {
       const response = await fetch("http://127.0.0.1:8000/ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ transcript }), // ✅ send the actual transcript array
       });
 
       if (!response.ok) {
@@ -49,7 +75,7 @@ export default function Home() {
       }
 
       const data = await response.json();
-      alert("✅ Transcript ingested and vector DB built!");
+      alert("✅ Transcript ingested!");
       console.log(data);
     } catch (err) {
       alert("❌ Failed to ingest transcript.");
@@ -57,20 +83,28 @@ export default function Home() {
     }
   };
 
+
   const askQuestion = async () => {
     setAnswer("");
+    setQuestion("");
+
     try {
       const response = await fetch("http://127.0.0.1:8000/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
       });
+
       const data = await response.json();
-      setAnswer(data.answer || "No answer found.");
+      console.log("QA Response:", data.answer);
+
+      // ✅ Safely extract the `result` string from the returned object
+      setAnswer(data.answer?.result || "No answer found.");
     } catch (err) {
       setAnswer("Error fetching answer.");
     }
   };
+
 
   return (
     <main className="min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-6">
@@ -94,12 +128,12 @@ export default function Home() {
             >
               {loading ? "Loading..." : "Get Transcript"}
             </Button>
-            <Button
+            {/* <Button
               onClick={ingestTranscript}
               className="bg-green-600 text-white hover:bg-green-700 transition"
             >
               Ingest
-            </Button>
+            </Button> */}
           </div>
 
           {error && <p className="text-red-500">{error}</p>}
