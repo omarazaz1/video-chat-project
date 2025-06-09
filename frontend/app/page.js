@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -7,13 +8,18 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   const [url, setUrl] = useState("");
+  const [videoId, setVideoId] = useState("");
   const [transcript, setTranscript] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
 
+  const extractVideoId = (url) => {
 
+    const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+    return match?.[1] || "";
+  };
 
   const getTranscript = async () => {
     try {
@@ -21,13 +27,19 @@ export default function Home() {
       setTranscript([]);
       setError(null);
 
+      const id = extractVideoId(url);
+      if (!id) {
+        alert("❌ Invalid YouTube URL");
+        return;
+      }
+      setVideoId(id);
+
       const response = await fetch("/api/transcript", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
 
-    
       const data = await response.json();
 
       if (data.transcript?.error) {
@@ -36,14 +48,12 @@ export default function Home() {
         return;
       }
 
-
       if (!Array.isArray(data.transcript)) {
         throw new Error("Transcript format is invalid.");
       }
 
       setTranscript(data.transcript);
 
-      // ✅ Safe to ingest now
       const ingestRes = await fetch("http://127.0.0.1:8000/ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,6 +63,7 @@ export default function Home() {
       if (!ingestRes.ok) throw new Error("Ingest failed");
       alert("✅ Transcript fetched & ingested!");
     } catch (err) {
+
       setError(err.message);
       alert("❌ " + err.message);
     } finally {
@@ -60,34 +71,8 @@ export default function Home() {
     }
   };
 
-
-
-  const ingestTranscript = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/ingest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript }), // ✅ send the actual transcript array
-      });
-
-      if (!response.ok) {
-        throw new Error("Ingestion failed");
-      }
-
-      const data = await response.json();
-      alert("✅ Transcript ingested!");
-      console.log(data);
-    } catch (err) {
-      alert("❌ Failed to ingest transcript.");
-      console.error(err);
-    }
-  };
-
-
   const askQuestion = async () => {
     setAnswer("");
-    setQuestion("");
-
     try {
       const response = await fetch("http://127.0.0.1:8000/ask", {
         method: "POST",
@@ -96,15 +81,11 @@ export default function Home() {
       });
 
       const data = await response.json();
-      console.log("QA Response:", data.answer);
-
-      // ✅ Safely extract the `result` string from the returned object
       setAnswer(data.answer?.result || "No answer found.");
     } catch (err) {
       setAnswer("Error fetching answer.");
     }
   };
-
 
   return (
     <main className="min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-6">
@@ -113,6 +94,18 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-center text-black drop-shadow-lg">
             🎬 YouTube Transcript Viewer
           </h1>
+
+          {videoId && (
+            <div className="w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-white/30">
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              ></iframe>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <Input
@@ -126,14 +119,8 @@ export default function Home() {
               disabled={loading}
               className="bg-black text-white hover:bg-white hover:text-black transition"
             >
-              {loading ? "Loading..." : "Get Transcript"}
+              {loading ? "Loading..." : "Analyze Video"}
             </Button>
-            {/* <Button
-              onClick={ingestTranscript}
-              className="bg-green-600 text-white hover:bg-green-700 transition"
-            >
-              Ingest
-            </Button> */}
           </div>
 
           {error && <p className="text-red-500">{error}</p>}

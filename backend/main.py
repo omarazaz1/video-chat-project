@@ -6,16 +6,15 @@ from video_utils import get_youtube_transcript
 from rag_engine import ingest_transcript, get_answer
 from fastapi import Request #
 from dotenv import load_dotenv
-
 import os
 
-# ✅ Load environment variables from .env
+#  Load environment variables from .env
 load_dotenv()
 
-# ✅ Initialize FastAPI app
+#  Initialize FastAPI app
 app = FastAPI()
 
-# ✅ Enable CORS for frontend communication
+#  Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,19 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Pydantic request models
+#  Pydantic request models
 class VideoRequest(BaseModel):
     url: str
 
 class QuestionRequest(BaseModel):
     question: str
 
-# ✅ Health check route
+#  Health check route
 @app.get("/")
 def root():
     return {"message": "Backend is running"}
 
-# ✅ Route to get transcript chunks from a YouTube URL
+# Route to get transcript chunks from a YouTube URL
 @app.post("/transcript")
 async def transcript_route(req: VideoRequest):
     try:
@@ -49,7 +48,7 @@ async def transcript_route(req: VideoRequest):
 @app.post("/ingest")
 async def ingest_route(req: Request):
     body = await req.json()
-    print("📦 Incoming ingest body:", body)
+    print(" Incoming ingest body:", body)
 
     transcript = body.get("transcript")
     if not isinstance(transcript, list):
@@ -58,7 +57,7 @@ async def ingest_route(req: Request):
     ingest_transcript(transcript)
     return {"message": "Transcript ingested!"}
 
-# ✅ Route to answer questions using the ingested transcript
+#  Route to answer questions using the ingested transcript
 @app.post("/ask")
 def ask_route(q: QuestionRequest):
     try:
