@@ -34,10 +34,7 @@ def get_youtube_transcript(url: str):
             if entry['start'] < current_time + chunk_size:
                 chunk_text += " " + entry['text']
             else:
-                # chunks.append({
-                #     "timestamp": format_time(chunk_start),
-                #     "text": chunk_text.strip()
-                # })
+             
                 chunks.append({
     "start_time": format_time(chunk_start),
     "link": f"https://www.youtube.com/watch?v={video_id}&t={int(chunk_start)}s",

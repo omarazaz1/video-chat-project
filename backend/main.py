@@ -6,7 +6,7 @@ from rag_engine import ingest_transcript, get_answer
 from dotenv import load_dotenv
 
 load_dotenv()
-
+from langchain_openai import ChatOpenAI
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -35,13 +35,21 @@ async def transcript(req: VideoRequest):
     result = get_youtube_transcript(req.url)
     return {"transcript": result}
 
+
 @app.post("/ingest")
 def ingest_route(data: VideoRequest):
-    chunks = get_youtube_transcript(data.url)
-    ingest_transcript(chunks)
-    return {"message": "Transcript ingested", "chunks": chunks}
+    result = get_youtube_transcript(data.url)
+    transcript = result.get("transcript", result)  # Support both dict or direct list
+
+    if not isinstance(transcript, list):
+        return {"error": "Transcript not found or invalid format."}
+
+    ingest_transcript(transcript)
+    return {"message": "Transcript ingested", "chunks": transcript}
+
 
 @app.post("/ask")
 def ask_question_route(q: QuestionRequest):
     answer = get_answer(q.question)
     return {"answer": answer}
+

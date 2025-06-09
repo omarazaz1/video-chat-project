@@ -10,6 +10,8 @@ export default function Home() {
   const [transcript, setTranscript] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
 
   const getTranscript = async () => {
     try {
@@ -19,10 +21,8 @@ export default function Home() {
 
       const response = await fetch("/api/transcript", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url }), // ✅ Important: send { url } object
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
       });
 
       if (!response.ok) throw new Error("Failed to fetch transcript");
@@ -36,6 +36,42 @@ export default function Home() {
     }
   };
 
+  const ingestTranscript = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Ingestion failed");
+      }
+
+      const data = await response.json();
+      alert("✅ Transcript ingested and vector DB built!");
+      console.log(data);
+    } catch (err) {
+      alert("❌ Failed to ingest transcript.");
+      console.error(err);
+    }
+  };
+
+  const askQuestion = async () => {
+    setAnswer("");
+    try {
+      const response = await fetch("http://127.0.0.1:8000/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const data = await response.json();
+      setAnswer(data.answer || "No answer found.");
+    } catch (err) {
+      setAnswer("Error fetching answer.");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-6">
       <Card className="w-full max-w-2xl shadow-2xl border-none">
@@ -43,6 +79,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-center text-black drop-shadow-lg">
             🎬 YouTube Transcript Viewer
           </h1>
+
           <div className="flex items-center gap-3">
             <Input
               placeholder="Paste YouTube URL..."
@@ -57,18 +94,18 @@ export default function Home() {
             >
               {loading ? "Loading..." : "Get Transcript"}
             </Button>
+            <Button
+              onClick={ingestTranscript}
+              className="bg-green-600 text-white hover:bg-green-700 transition"
+            >
+              Ingest
+            </Button>
           </div>
+
           {error && <p className="text-red-500">{error}</p>}
+
           {transcript.length > 0 && (
             <div className="max-h-[400px] overflow-y-auto bg-white/90 p-4 rounded-lg text-sm text-black space-y-2">
-              {/* {transcript.map((item, index) => (
-                <p key={index}>
-                  <span className="font-semibold text-indigo-600 mr-2">
-                    [{item.start_time}]
-                  </span>
-                  {item.text}
-                </p>
-              ))} */}
               {transcript.map((item, index) => (
                 <p key={index} className="text-black">
                   <a
@@ -82,7 +119,29 @@ export default function Home() {
                   {item.text}
                 </p>
               ))}
+            </div>
+          )}
 
+          {transcript.length > 0 && (
+            <div className="space-y-4 pt-6">
+              <Input
+                placeholder="Ask a question about the video..."
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                className="bg-white/80 backdrop-blur text-black border-0"
+              />
+              <Button
+                onClick={askQuestion}
+                className="bg-indigo-600 text-white hover:bg-white hover:text-indigo-600 transition"
+              >
+                Ask
+              </Button>
+              {answer && (
+                <div className="bg-white/90 p-4 rounded-lg text-sm text-black space-y-2 shadow">
+                  <p className="font-semibold text-indigo-600">Answer:</p>
+                  <p>{answer}</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

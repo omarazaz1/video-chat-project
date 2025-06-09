@@ -1,21 +1,34 @@
+
 # Python
-**/venv/
-**/__pycache__/
-**/*.py[cod]
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+venv/
+*.sqlite3
+*.log
+*.db
 
-# Node (frontend)
-**/node_modules/
-**/.next/
-**/.env.local
+# VS Code
+.vscode/
 
-# System files
+# macOS
 .DS_Store
 
-# IDE files
-.vscode/
-*.log
+# Node.js
+node_modules/
+.next/
+.env.local
+.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Env and build
-.env
-dist/
-build/
+# Chroma vector DB (if persisted)
+chroma_db/
+
+# Output files
+*.out
+*.bak
