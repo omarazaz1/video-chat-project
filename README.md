@@ -15,4 +15,4 @@ This app lets users extract YouTube video transcripts and chat with them using a
  Tech Stack
 
 - Frontend: Next.js + Tailwind CSS + ShadCN
-- Backend: FastAPI + LangChain + Chroma + OpenAI
+- Backend: FastAPI + LangChain + Chroma + OpenAI 

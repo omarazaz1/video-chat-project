@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function Home() {
+export default function page() {
   const [url, setUrl] = useState("");
   const [videoId, setVideoId] = useState("");
   const [transcript, setTranscript] = useState([]);
@@ -61,7 +61,10 @@ export default function Home() {
       });
 
       if (!ingestRes.ok) throw new Error("Ingest failed");
-      alert("✅ Transcript fetched & ingested!");
+
+      // alert("✅ Transcript fetched & ingested!");            {PR}
+
+
     } catch (err) {
 
       setError(err.message);

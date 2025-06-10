@@ -1,20 +1,17 @@
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from video_utils import get_youtube_transcript
 from rag_engine import ingest_transcript, get_answer
-from fastapi import Request #
 from dotenv import load_dotenv
-import os
 
-#  Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
-#  Initialize FastAPI app
+# Initialize FastAPI app
 app = FastAPI()
 
-#  Enable CORS for frontend communication
+# Enable CORS for frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,46 +19,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#  Pydantic request models
+# Request models
 class VideoRequest(BaseModel):
     url: str
 
 class QuestionRequest(BaseModel):
     question: str
 
-#  Health check route
+# Health check
 @app.get("/")
 def root():
-    return {"message": "Backend is running"}
+    return {"message": "✅ Backend is running"}
 
-# Route to get transcript chunks from a YouTube URL
+# Endpoint: Fetch transcript
 @app.post("/transcript")
 async def transcript_route(req: VideoRequest):
     try:
         result = get_youtube_transcript(req.url)
         return {"transcript": result}
     except Exception as e:
-        print(f"❌ Error in /transcript: {e}")
+        print(f"❌ Error in /transcript:", e)
         return {"transcript": {"error": f"Error fetching transcript: {str(e)}"}}
 
-
+# Endpoint: Ingest transcript
 @app.post("/ingest")
 async def ingest_route(req: Request):
-    body = await req.json()
-    print(" Incoming ingest body:", body)
+    try:
+        body = await req.json()
+        transcript = body.get("transcript")
+        if not isinstance(transcript, list):
+            raise HTTPException(status_code=400, detail="Transcript must be a list.")
+        ingest_transcript(transcript)
+        return {"message": "✅ Transcript ingested!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ingest error: {str(e)}")
 
-    transcript = body.get("transcript")
-    if not isinstance(transcript, list):
-        raise HTTPException(status_code=400, detail="Transcript must be a list.")
-
-    ingest_transcript(transcript)
-    return {"message": "Transcript ingested!"}
-
-#  Route to answer questions using the ingested transcript
+# Endpoint: Ask question
 @app.post("/ask")
 def ask_route(q: QuestionRequest):
     try:
-        answer = get_answer(q.question)
+        answer = get_answer(q.question)  # This must use the custom prompt in rag_engine.py
         return {"answer": answer}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Answering error: {str(e)}")
